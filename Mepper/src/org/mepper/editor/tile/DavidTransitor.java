@@ -1,0 +1,163 @@
+/* DavidTransitor.java 1.0 2010-2-2
+ * 
+ * Copyright (c) 2010 by Chen Zhiwu
+ * All rights reserved.
+ * 
+ * The copyright of this software is own by the authors.
+ * You may not use, copy or modify this software, except
+ * in accordance with the license agreement you entered into 
+ * with the copyright holders. For details see accompanying license
+ * terms.
+ */
+package org.mepper.editor.tile;
+
+import java.awt.Dimension;
+
+import org.mepper.editor.map.Layer;
+import org.mepper.editor.map.UnSelecteLayer;
+import org.mepper.resources.LibraryResource;
+import org.mepper.resources.StorableResource;
+
+/**
+ * <B>DavidTransitor</B>
+ * 
+ * @author Zhi-Wu Chen. Email: <a href="mailto:Java.mepper@gmail.com">Java.mepper@gmail.com</a>
+ * @version Ver 1.0.01 2011-5-5 created
+ * @since org.mepper.editor.tile Ver 1.0
+ * 
+ */
+public class DavidTransitor implements TerrainTransitor{
+	private Layer layer;
+	private LibraryResource lib;
+	private int max;
+	private int min ;
+	public static final String LAYER_NAME = "david";
+	private Dimension d;
+	
+	private static final int[][] orientate=new int[][]{
+		{1,-1},{-1,-1},{-1,1},{1,1},{0,-1},{-1,0},{0,1},{1,0}		};
+	
+	
+	@Override
+	public void setLayer(Layer l) {
+		this.layer =l;
+	}
+
+	@Override
+	public void addLibrary(LibraryResource lib) {
+		this.lib = lib;
+	}
+
+	@Override
+	public Layer transition() {
+		min = Integer.MAX_VALUE;
+		max= Integer.MIN_VALUE;
+		
+		d= layer.getOccupieArea();
+		int[][] prioritys=new int[d.width][d.height];
+		
+		Layer retval =new UnSelecteLayer();
+		retval.setName(LAYER_NAME);
+		retval.setOccupieArea(d);
+		
+		for(int i=0;i<d.width;i++){
+			for(int j=0;j<d.height;j++){
+				Tile t=layer.getTileAt(i, j);
+				if(t== null ){
+					continue;
+				}
+				int p= getPriority(t);
+				updateMax(p);
+				prioritys[i][j] = p;
+			}
+		}
+		transition(prioritys,retval);
+		return retval;
+	}
+
+	private void updateMax(int p) {
+		min =  min>p ? p:min;
+		max = max<p? p:max;
+	}
+
+	private void transition(int[][] priorities, Layer retval) {
+		int x,y;
+		min++;
+		for(;min<=max;min++){
+			for(int i=0,p=priorities.length;i<p;i++){
+				for(int j=0,q=priorities[0].length;j<q;j++){
+					if(priorities[i][j] == min){
+						for(int o=128;o>0;o= o>>1){
+							int ori=orientate.length-log2(o);
+							x =  i+orientate[ori][0];
+							y =  j+ orientate[ori][1];
+							if(x<0 || y<0 || x>=p || y>=q){
+								continue;
+							}
+							int otherPriority= priorities[x][y];
+								if(otherPriority < min){
+									String name =min+"."+format(Integer.toBinaryString(o));
+									StorableResource r =  lib.getChildByName(name);
+									if(r == null){
+										continue;
+									}
+									Tile transTile=(Tile) r.getSource();
+									addToRetval(transTile,retval,x,y );
+								}
+							}
+						}
+					}
+				}
+			}
+	}
+	
+	private int log2(int p) {
+		int i=0;
+		for(;p>0;i++,p=p>>1);
+		return i;
+	}
+
+	private static String format(String s) {
+		String mat = "0";
+		StringBuffer sb = new StringBuffer();
+		if (s.length() < 8) {
+			int p = 8 - s.length();
+			for (int i = 0; i < p; i++) {
+				sb.append(mat);
+			}
+		}
+		sb.append(s);
+		return sb.toString();
+	}
+
+	private void addToRetval(Tile transTile, Layer retval, int x, int y) {
+		CompositeTile ct = (CompositeTile) retval.getTileAt(x, y);
+		if (ct == null) {
+			ct = TileFactory.createCompositeTile(transTile);
+		}else {
+			addTransTile(ct,transTile);
+		}
+		retval.add(ct, x,y);
+	}
+
+	private void addTransTile(CompositeTile parent, Tile transTile) {
+		CompositeTile child= (CompositeTile) parent.getTileAt(0, 0);
+		if(child == null){
+			child = TileFactory.createCompositeTile(transTile);
+			parent.add(child, 0, 0);
+		}else{
+			addTransTile(child, transTile);
+		}
+			
+	}
+
+	private int getPriority(Tile t){
+		try{
+			return Integer.parseInt(t.getProperty("t"));
+		}catch (Exception e) {
+//			AppLogging.handleException(e);
+			return -1;
+		}
+		
+	}
+}

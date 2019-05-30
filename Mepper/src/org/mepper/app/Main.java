@@ -1,0 +1,88 @@
+/* Main.java 1.0 2010-2-2
+ * 
+ * Copyright (c) 2010 by Chen Zhiwu
+ * All rights reserved.
+ * 
+ * The copyright of this software is own by the authors.
+ * You may not use, copy or modify this software, except
+ * in accordance with the license agreement you entered into 
+ * with the copyright holders. For details see accompanying license
+ * terms.
+ */
+package org.mepper.app;
+
+import java.awt.EventQueue;
+import java.util.Locale;
+import java.util.StringTokenizer;
+
+import org.zhiwu.app.AppManager;
+import org.zhiwu.app.Application;
+import org.zhiwu.app.Model;
+import org.zhiwu.app.config.AppPreference;
+import org.zhiwu.app.config.PreferenceManager;
+import org.zhiwu.utils.AppLogging;
+
+
+
+/**
+ * <B>Main</B>
+ * 
+ * @author Zhi-Wu Chen. Email: <a href="mailto:Java.mepper@gmail.com">Java.mepper@gmail.com</a>
+ * @version Ver 1.0.01 2010-11-27 created
+ * @since org.map.editor.app Ver 1.0
+ * 
+ */
+public class Main {
+	
+	
+	public static void main(String[] args) {
+		startApplication();
+	}
+	
+
+	private static void startApplication() {
+		//--------- TODO move to MapApplication.java-----------------
+		//		initLabels();
+				AppManager.setLabels("org.mepper.app.Labels");
+		//		initLocale();
+				Locale l;
+				AppPreference prep=PreferenceManager.getInstance().getPreference(Application.class.getName());
+				String localeString=prep.get("locale");
+				int p=localeString.indexOf("_");
+				l=new Locale(localeString.substring(0, p),localeString.substring(p+1));
+				AppManager.setLocale(l);
+		//--------------- TODO move to MapApplication.java--------------------
+				
+				// create model
+				Model model = new MapModel();
+				model.setCopyright("2011 all right reserve");
+				model.setName("mepper");
+				model.setVersion("0.1.1.201109292052");
+				
+				
+				//create applicatioin
+				final Application app=new MapApplication();
+				app.setModel(model);
+		//		model.addView(AppView.class.getName());
+				
+				StringTokenizer st=new StringTokenizer(prep.get("views"),",");
+				while(st.hasMoreTokens()){
+					model.addView(st.nextToken());
+				}
+				
+				EventQueue.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							app.launch();
+						} catch (Exception e) {
+							AppLogging.handleException(e);
+						}
+					}
+				});
+	}
+	
+	
+
+	
+}

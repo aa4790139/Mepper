@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+plugin-implement: org.map.MapIO
+plugin-name: org.mepper.io.xml
+plugin-description: read and write map as xml file.
+extension: org.mepper.io.MapReader=org.mepper.io.XMLReader;org.mepper.io.MapWriter=org.mepper.io.XMLWriter
